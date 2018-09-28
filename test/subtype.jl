@@ -847,10 +847,14 @@ function test_intersection()
     @testintersect(Ref{@UnionAll T @UnionAll S Tuple{T,S}},
                    Ref{@UnionAll T Tuple{T,T}}, Bottom)
 
+    # both of these answers seem acceptable
+    #@testintersect(Tuple{T,T} where T<:Union{UpperTriangular, UnitUpperTriangular},
+    #               Tuple{AbstractArray{T,N}, AbstractArray{T,N}} where N where T,
+    #               Union{Tuple{T,T} where T<:UpperTriangular,
+    #                     Tuple{T,T} where T<:UnitUpperTriangular})
     @testintersect(Tuple{T,T} where T<:Union{UpperTriangular, UnitUpperTriangular},
                    Tuple{AbstractArray{T,N}, AbstractArray{T,N}} where N where T,
-                   Union{Tuple{T,T} where T<:UpperTriangular,
-                         Tuple{T,T} where T<:UnitUpperTriangular})
+                   Tuple{T,T} where T<:Union{UpperTriangular, UnitUpperTriangular})
 
     @testintersect(DataType, Type, DataType)
     @testintersect(DataType, Type{T} where T<:Integer, Type{T} where T<:Integer)
@@ -1333,3 +1337,14 @@ struct A28256{names, T<:NamedTuple{names, <:Tuple}}
     x::T
 end
 @test A28256{(:a,), NamedTuple{(:a,),Tuple{Int}}}((a=1,)) isa A28256
+
+# issue #25752
+@testintersect(Base.RefValue, Ref{Union{Int,T}} where T,
+               Base.RefValue{Union{Int,T}} where T)
+# issue #29269
+@testintersect((Tuple{Int, Array{T}} where T),
+               (Tuple{Any, Vector{Union{Missing,T}}} where T),
+               (Tuple{Int, Vector{Union{Missing,T}}} where T))
+@testintersect((Tuple{Int, Array{T}} where T),
+               (Tuple{Any, Vector{Union{Missing,Nothing,T}}} where T),
+               (Tuple{Int, Vector{Union{Missing,Nothing,T}}} where T))
